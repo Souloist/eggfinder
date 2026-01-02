@@ -18,8 +18,8 @@ Game Rules:
   - Goal: Collect as many eggs as possible before turns run out
 
 Display:
-  * = collected egg    E = revealed egg    # = hidden cell
-  . = empty cell       1-8 = adjacent egg count
+  ★ = collected egg    ○ = revealed egg    ■ = hidden cell
+  · = empty cell       1-8 = adjacent egg count
         """
     )
     parser.add_argument('-W', '--width', type=int, default=10,

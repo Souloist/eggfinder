@@ -20,7 +20,7 @@ class CellType(IntEnum):
 
 class CellDisplay(str, Enum):
     """Display symbols for board cells."""
-    COLLECTED_EGG = "*"
-    REVEALED_EGG = "E"
-    HIDDEN = "#"
-    EMPTY = "."
+    COLLECTED_EGG = "★"
+    REVEALED_EGG = "○"
+    HIDDEN = "■"
+    EMPTY = "·"
