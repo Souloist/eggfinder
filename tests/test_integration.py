@@ -24,7 +24,7 @@ class TestGameIntegration(unittest.TestCase):
                     break
 
                 result = process_click(board, state, row, col)
-                if result['valid']:
+                if result.valid:
                     moves_made += 1
 
         # Game should have progressed
@@ -42,8 +42,8 @@ class TestGameIntegration(unittest.TestCase):
         eggs_to_collect = list(board.eggs)
         for egg_pos in eggs_to_collect:
             result = process_click(board, state, egg_pos[0], egg_pos[1])
-            self.assertTrue(result['valid'])
-            self.assertTrue(result['egg_found'])
+            self.assertTrue(result.valid)
+            self.assertTrue(result.egg_found)
 
         # Verify all eggs collected
         self.assertEqual(len(state.eggs_collected), 3)
@@ -65,7 +65,7 @@ class TestGameIntegration(unittest.TestCase):
                     break
                 if not board.revealed[row][col]:
                     result = process_click(board, state, row, col)
-                    if result['valid']:
+                    if result.valid:
                         click_count += 1
 
         # Game should eventually end
@@ -115,8 +115,8 @@ class TestGameIntegration(unittest.TestCase):
                 if not board.revealed[row][col]:
                     result = process_click(board, state, row, col)
 
-                    if result['valid']:
-                        if result['egg_found']:
+                    if result.valid:
+                        if result.egg_found:
                             eggs_collected += 1
                         else:
                             normal_clicks += 1
@@ -144,7 +144,7 @@ class TestGameIntegration(unittest.TestCase):
                 break
 
             result = process_click(board, state, row, 0)
-            if result['valid']:
+            if result.valid:
                 output = render_full_game(board, state)
                 self.assertIsInstance(output, str)
 
@@ -167,7 +167,7 @@ class TestGameIntegration(unittest.TestCase):
 
                 result = process_click(board, state, row, col)
 
-                if result['valid']:
+                if result.valid:
                     # Revealed cells should only increase
                     curr_revealed = sum(sum(r) for r in board.revealed)
                     self.assertGreaterEqual(curr_revealed, prev_revealed)
@@ -176,7 +176,7 @@ class TestGameIntegration(unittest.TestCase):
                     self.assertGreaterEqual(len(state.eggs_collected), prev_eggs)
 
                     # Turns should change correctly
-                    if result['egg_found']:
+                    if result.egg_found:
                         # Should gain 2 turns
                         self.assertEqual(state.turns_remaining, prev_turns + 2)
                     else:
@@ -203,7 +203,7 @@ class TestGameIntegration(unittest.TestCase):
         result1 = process_click(board1, state1, 0, 0)
         result2 = process_click(board2, state2, 0, 0)
 
-        self.assertEqual(result1['cells_revealed'], result2['cells_revealed'])
+        self.assertEqual(result1.cells_revealed, result2.cells_revealed)
         self.assertEqual(state1.turns_remaining, state2.turns_remaining)
 
 
@@ -216,8 +216,8 @@ class TestEdgeCaseGames(unittest.TestCase):
 
         # Should be able to play normally
         result = process_click(board, state, 0, 0)
-        self.assertTrue(result['valid'])
-        self.assertFalse(result['egg_found'])
+        self.assertTrue(result.valid)
+        self.assertFalse(result.egg_found)
 
     def test_board_all_eggs(self):
         board = Board(3, 3, 9)  # 3x3 board, 9 eggs
@@ -228,8 +228,8 @@ class TestEdgeCaseGames(unittest.TestCase):
         for row in range(3):
             for col in range(3):
                 result = process_click(board, state, row, col)
-                if result['valid']:
-                    self.assertTrue(result['egg_found'])
+                if result.valid:
+                    self.assertTrue(result.egg_found)
                     eggs_found += 1
 
         self.assertEqual(eggs_found, 9)
@@ -239,7 +239,7 @@ class TestEdgeCaseGames(unittest.TestCase):
         state = GameState()
 
         result = process_click(board, state, 0, 0)
-        self.assertTrue(result['valid'])
+        self.assertTrue(result.valid)
 
         # Board should be fully revealed now
         self.assertTrue(board.revealed[0][0])
@@ -255,7 +255,7 @@ class TestEdgeCaseGames(unittest.TestCase):
 
         # Should be playable
         result = process_click(board, state, 0, 0)
-        self.assertTrue(result['valid'])
+        self.assertTrue(result.valid)
 
 
 if __name__ == '__main__':

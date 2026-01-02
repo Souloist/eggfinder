@@ -85,7 +85,7 @@ class TestFloodfillReveal(unittest.TestCase):
         cells_revealed = floodfill_reveal(board, 1, 1)
         self.assertEqual(cells_revealed, 0)
 
-    def test_floodfill_reveals_egg(self):
+    def test_floodfill_does_not_reveal_eggs(self):
         board = Board(5, 5, 0)
 
         board.eggs.add((2, 2))
@@ -93,6 +93,8 @@ class TestFloodfillReveal(unittest.TestCase):
         board._calculate_numbers()
 
         floodfill_reveal(board, 0, 0)
+
+        self.assertFalse(board.revealed[2][2])
 
 
 class TestProcessClick(unittest.TestCase):
@@ -102,11 +104,11 @@ class TestProcessClick(unittest.TestCase):
         state = GameState()
 
         result = process_click(board, state, -1, 0)
-        self.assertFalse(result['valid'])
+        self.assertFalse(result.valid)
         self.assertEqual(state.turns_remaining, 10)
 
         result = process_click(board, state, 5, 5)
-        self.assertFalse(result['valid'])
+        self.assertFalse(result.valid)
         self.assertEqual(state.turns_remaining, 10)
 
     def test_click_already_revealed(self):
@@ -116,7 +118,7 @@ class TestProcessClick(unittest.TestCase):
         board.revealed[2][2] = True
         result = process_click(board, state, 2, 2)
 
-        self.assertFalse(result['valid'])
+        self.assertFalse(result.valid)
         self.assertEqual(state.turns_remaining, 10)
 
     def test_click_game_already_over(self):
@@ -124,8 +126,8 @@ class TestProcessClick(unittest.TestCase):
         state = GameState(game_over=True)
 
         result = process_click(board, state, 0, 0)
-        self.assertFalse(result['valid'])
-        self.assertIn('already over', result['message'].lower())
+        self.assertFalse(result.valid)
+        self.assertIn('already over', result.message.lower())
 
     def test_click_on_egg(self):
         board = Board(5, 5, 0)
@@ -138,8 +140,8 @@ class TestProcessClick(unittest.TestCase):
 
         result = process_click(board, state, 2, 2)
 
-        self.assertTrue(result['valid'])
-        self.assertTrue(result['egg_found'])
+        self.assertTrue(result.valid)
+        self.assertTrue(result.egg_found)
         self.assertIn((2, 2), state.eggs_collected)
         self.assertEqual(state.turns_remaining, initial_turns + 2)
         self.assertEqual(state.score, 1)
@@ -156,8 +158,8 @@ class TestProcessClick(unittest.TestCase):
 
         result = process_click(board, state, 0, 1)
 
-        self.assertTrue(result['valid'])
-        self.assertFalse(result['egg_found'])
+        self.assertTrue(result.valid)
+        self.assertFalse(result.egg_found)
         self.assertEqual(state.turns_remaining, initial_turns - 1)
         self.assertTrue(board.revealed[0][1])
 
@@ -167,8 +169,8 @@ class TestProcessClick(unittest.TestCase):
 
         result = process_click(board, state, 0, 0)
 
-        self.assertTrue(result['valid'])
-        self.assertGreater(result['cells_revealed'], 1)
+        self.assertTrue(result.valid)
+        self.assertGreater(result.cells_revealed, 1)
         self.assertEqual(state.turns_remaining, 9)
 
     def test_game_over_on_last_turn(self):
@@ -177,7 +179,7 @@ class TestProcessClick(unittest.TestCase):
 
         result = process_click(board, state, 0, 0)
 
-        self.assertTrue(result['valid'])
+        self.assertTrue(result.valid)
         self.assertTrue(state.game_over)
         self.assertEqual(state.turns_remaining, 0)
 
@@ -214,12 +216,15 @@ class TestProcessClickEdgeCases(unittest.TestCase):
 
         result = process_click(board, state, 0, 0)
 
-        required_keys = {'valid', 'message', 'egg_found', 'turns_used',
-                        'cells_revealed', 'game_over'}
-        self.assertEqual(set(result.keys()), required_keys)
+        self.assertTrue(hasattr(result, 'valid'))
+        self.assertTrue(hasattr(result, 'message'))
+        self.assertTrue(hasattr(result, 'egg_found'))
+        self.assertTrue(hasattr(result, 'turns_delta'))
+        self.assertTrue(hasattr(result, 'cells_revealed'))
+        self.assertTrue(hasattr(result, 'game_over'))
 
     def test_revealed_egg_not_collected(self):
-        """Eggs revealed by floodfill shouldn't be auto-collected."""
+        """Eggs should never be revealed by floodfill, only by direct clicks."""
         board = Board(5, 5, 0)
 
         board.eggs.add((2, 2))
@@ -230,8 +235,8 @@ class TestProcessClickEdgeCases(unittest.TestCase):
 
         process_click(board, state, 0, 0)
 
-        if board.revealed[2][2]:
-            self.assertNotIn((2, 2), state.eggs_collected)
+        self.assertFalse(board.revealed[2][2])
+        self.assertNotIn((2, 2), state.eggs_collected)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 from .board import Board
 from .model import GameState
+from .constants import CellType, CellDisplay
 
 
 def render_board(board: Board, game_state: GameState, show_all: bool = False) -> str:
@@ -15,19 +16,24 @@ def render_board(board: Board, game_state: GameState, show_all: bool = False) ->
         line = f"{row:2}"
         for col in range(board.width):
             if show_all or board.revealed[row][col]:
-                if (row, col) in game_state.eggs_collected:
-                    line += " *"
-                elif board.cells[row][col] == -1:
-                    line += " E"
-                elif board.cells[row][col] == 0:
-                    line += " ."
-                else:
-                    line += f" {board.cells[row][col]}"
+                line += f" {_render_cell(board, game_state, row, col)}"
             else:
-                line += " #"
+                line += f" {CellDisplay.HIDDEN.value}"
         lines.append(line)
 
     return "\n".join(lines)
+
+
+def _render_cell(board: Board, game_state: GameState, row: int, col: int) -> str:
+    """Render a single revealed cell."""
+    if (row, col) in game_state.eggs_collected:
+        return CellDisplay.COLLECTED_EGG.value
+    elif board.cells[row][col] == CellType.EGG:
+        return CellDisplay.REVEALED_EGG.value
+    elif board.cells[row][col] == CellType.EMPTY:
+        return CellDisplay.EMPTY.value
+    else:
+        return str(board.cells[row][col])
 
 
 def render_game_status(game_state: GameState, board: Board) -> str:

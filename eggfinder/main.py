@@ -2,10 +2,11 @@
 
 import argparse
 import sys
+from typing import Optional, Tuple
 from eggfinder import Board, GameState, process_click, render_full_game
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='EggFinder - A minesweeper-like game where you collect eggs!',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -30,7 +31,7 @@ Display:
     return parser.parse_args()
 
 
-def get_user_input():
+def get_user_input() -> Optional[Tuple[int, int]]:
     """Get user input for row and column. Returns (row, col) or None to quit."""
     while True:
         try:
@@ -62,7 +63,7 @@ def get_user_input():
             return None
 
 
-def main():
+def main() -> None:
     args = parse_args()
 
     print("=" * 60)
@@ -87,12 +88,12 @@ def main():
         row, col = coords
         result = process_click(board, game_state, row, col)
 
-        if result['valid']:
-            print(f"\n✓ {result['message']}")
-            if result['egg_found']:
+        if result.valid:
+            print(f"\n✓ {result.message}")
+            if result.egg_found:
                 print("  Egg collected! +2 bonus turns!")
         else:
-            print(f"\n✗ {result['message']}")
+            print(f"\n✗ {result.message}")
 
     print("\n" + render_full_game(board, game_state))
     print("\n" + "=" * 60)

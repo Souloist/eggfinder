@@ -1,11 +1,30 @@
 import random
 from typing import Set, Tuple, List, Optional
 
+from .constants import GameConfig, CellType
+from .exceptions import InvalidBoardError
+
 
 class Board:
     """Board state and operations."""
 
-    def __init__(self, width: int = 10, height: int = 10, egg_count: int = 10):
+    def __init__(
+        self,
+        width: int = GameConfig.DEFAULT_BOARD_WIDTH,
+        height: int = GameConfig.DEFAULT_BOARD_HEIGHT,
+        egg_count: int = GameConfig.DEFAULT_EGG_COUNT
+    ):
+        if width <= 0 or height <= 0:
+            raise InvalidBoardError(
+                f"Board dimensions must be positive, got {width}x{height}"
+            )
+
+        max_eggs = width * height
+        if egg_count < 0 or egg_count > max_eggs:
+            raise InvalidBoardError(
+                f"Egg count must be between 0 and {max_eggs}, got {egg_count}"
+            )
+
         self.width = width
         self.height = height
         self.egg_count = egg_count
@@ -29,24 +48,22 @@ class Board:
 
             if (row, col) not in self.eggs:
                 self.eggs.add((row, col))
-                self.cells[row][col] = -1
+                self.cells[row][col] = CellType.EGG
                 placed += 1
 
     def _calculate_numbers(self) -> None:
         """Calculate adjacent egg counts for each cell."""
         for row in range(self.height):
             for col in range(self.width):
-                if self.cells[row][col] != -1:
-                    count = 0
-                    for dr in [-1, 0, 1]:
-                        for dc in [-1, 0, 1]:
-                            if dr == 0 and dc == 0:
-                                continue
-                            nr, nc = row + dr, col + dc
-                            if self.is_valid_position(nr, nc):
-                                if self.cells[nr][nc] == -1:
-                                    count += 1
-                    self.cells[row][col] = count
+                if self.cells[row][col] != CellType.EGG:
+                    self.cells[row][col] = self._count_adjacent_eggs(row, col)
+
+    def _count_adjacent_eggs(self, row: int, col: int) -> int:
+        """Count eggs adjacent to the given position."""
+        return sum(
+            1 for nr, nc in self.get_neighbors(row, col)
+            if self.is_egg(nr, nc)
+        )
 
     def is_valid_position(self, row: int, col: int) -> bool:
         return 0 <= row < self.height and 0 <= col < self.width
