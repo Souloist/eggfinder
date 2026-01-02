@@ -14,7 +14,7 @@ def parse_args() -> argparse.Namespace:
 Game Rules:
   - Start with 10 turns
   - Click cells to reveal them (costs 1 turn)
-  - Click an egg to collect it (grants +2 bonus turns!)
+  - Click an egg to collect it (grants +1 bonus turn - no net cost!)
   - Goal: Collect as many eggs as possible before turns run out
 
 Display:
@@ -91,7 +91,7 @@ def main() -> None:
         if result.valid:
             print(f"\n✓ {result.message}")
             if result.egg_found:
-                print("  Egg collected! +2 bonus turns!")
+                print("  Egg collected! +1 bonus turn (no net cost)!")
         else:
             print(f"\n✗ {result.message}")
 

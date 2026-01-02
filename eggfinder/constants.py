@@ -6,7 +6,7 @@ from enum import IntEnum, Enum
 class GameConfig:
     """Game rule configuration."""
     DEFAULT_TURNS = 10
-    EGG_BONUS_TURNS = 2
+    EGG_BONUS_TURNS = 1
     DEFAULT_BOARD_WIDTH = 10
     DEFAULT_BOARD_HEIGHT = 10
     DEFAULT_EGG_COUNT = 10

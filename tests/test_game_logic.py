@@ -143,7 +143,7 @@ class TestProcessClick(unittest.TestCase):
         self.assertTrue(result.valid)
         self.assertTrue(result.egg_found)
         self.assertIn((2, 2), state.eggs_collected)
-        self.assertEqual(state.turns_remaining, initial_turns + 2)
+        self.assertEqual(state.turns_remaining, initial_turns + 1)
         self.assertEqual(state.score, 1)
         self.assertTrue(board.revealed[2][2])
 
@@ -196,15 +196,15 @@ class TestProcessClick(unittest.TestCase):
         state = GameState()
 
         process_click(board, state, 0, 0)
-        self.assertEqual(state.turns_remaining, 12)
+        self.assertEqual(state.turns_remaining, 11)
         self.assertEqual(state.score, 1)
 
         process_click(board, state, 1, 1)
-        self.assertEqual(state.turns_remaining, 14)
+        self.assertEqual(state.turns_remaining, 12)
         self.assertEqual(state.score, 2)
 
         process_click(board, state, 2, 2)
-        self.assertEqual(state.turns_remaining, 16)
+        self.assertEqual(state.turns_remaining, 13)
         self.assertEqual(state.score, 3)
 
 

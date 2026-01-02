@@ -86,14 +86,14 @@ class TestGameIntegration(unittest.TestCase):
         # With only 2 turns, couldn't normally collect all 3 eggs
         # But bonus turns allow it
 
-        process_click(board, state, 0, 0)  # +2 turns
-        self.assertEqual(state.turns_remaining, 4)  # 2 + 2
+        process_click(board, state, 0, 0)  # +1 turn
+        self.assertEqual(state.turns_remaining, 3)  # 2 + 1
 
-        process_click(board, state, 1, 1)  # +2 turns
-        self.assertEqual(state.turns_remaining, 6)  # 4 + 2
+        process_click(board, state, 1, 1)  # +1 turn
+        self.assertEqual(state.turns_remaining, 4)  # 3 + 1
 
-        process_click(board, state, 2, 2)  # +2 turns
-        self.assertEqual(state.turns_remaining, 8)  # 6 + 2
+        process_click(board, state, 2, 2)  # +1 turn
+        self.assertEqual(state.turns_remaining, 5)  # 4 + 1
 
         self.assertEqual(len(state.eggs_collected), 3)
         self.assertFalse(state.game_over)
@@ -125,8 +125,8 @@ class TestGameIntegration(unittest.TestCase):
         self.assertEqual(eggs_collected, len(state.eggs_collected))
         self.assertEqual(state.score, eggs_collected)
 
-        # Turn calculation: initial + (eggs * 2) - normal_clicks
-        expected_turns = initial_turns + (eggs_collected * 2) - normal_clicks
+        # Turn calculation: initial + (eggs * 1) - normal_clicks
+        expected_turns = initial_turns + (eggs_collected * 1) - normal_clicks
         self.assertEqual(state.turns_remaining, expected_turns)
 
     def test_render_during_gameplay(self):
@@ -177,8 +177,8 @@ class TestGameIntegration(unittest.TestCase):
 
                     # Turns should change correctly
                     if result.egg_found:
-                        # Should gain 2 turns
-                        self.assertEqual(state.turns_remaining, prev_turns + 2)
+                        # Should gain 1 turn
+                        self.assertEqual(state.turns_remaining, prev_turns + 1)
                     else:
                         # Should lose 1 turn (unless floodfill revealed everything)
                         self.assertEqual(state.turns_remaining, prev_turns - 1)
