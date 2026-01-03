@@ -1,11 +1,11 @@
 """Unit tests for board.py (Board)."""
 
 import unittest
+
 from eggfinder.board import Board
 
 
 class TestBoard(unittest.TestCase):
-
     def test_default_initialization(self):
         board = Board()
         self.assertEqual(board.width, 10)
@@ -117,8 +117,11 @@ class TestBoard(unittest.TestCase):
                         if board.is_egg(nr, nc):
                             actual_count += 1
 
-                    self.assertEqual(cell_value, actual_count,
-                                   f"Cell ({row},{col}) should have {actual_count} but has {cell_value}")
+                    self.assertEqual(
+                        cell_value,
+                        actual_count,
+                        f"Cell ({row},{col}) should have {actual_count} but has {cell_value}",
+                    )
 
 
 class TestBoardDeterministic(unittest.TestCase):
@@ -131,16 +134,13 @@ class TestBoardDeterministic(unittest.TestCase):
         board.cells[1][1] = -1
         board._calculate_numbers()
 
-        expected = [
-            [1, 1, 1],
-            [1, -1, 1],
-            [1, 1, 1]
-        ]
+        expected = [[1, 1, 1], [1, -1, 1], [1, 1, 1]]
 
         for row in range(3):
             for col in range(3):
-                self.assertEqual(board.cells[row][col], expected[row][col],
-                               f"Mismatch at ({row},{col})")
+                self.assertEqual(
+                    board.cells[row][col], expected[row][col], f"Mismatch at ({row},{col})"
+                )
 
     def test_two_adjacent_eggs(self):
         board = Board(3, 3, 0)
@@ -161,5 +161,5 @@ class TestBoardDeterministic(unittest.TestCase):
         self.assertEqual(board.cells[1][2], 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

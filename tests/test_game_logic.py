@@ -1,18 +1,13 @@
 """Unit tests for game_logic.py."""
 
 import unittest
+
 from eggfinder.board import Board
+from eggfinder.game_logic import calculate_score, check_game_over, floodfill_reveal, process_click
 from eggfinder.model import GameState
-from eggfinder.game_logic import (
-    floodfill_reveal,
-    process_click,
-    check_game_over,
-    calculate_score
-)
 
 
 class TestCalculateScore(unittest.TestCase):
-
     def test_score_no_eggs(self):
         state = GameState()
         self.assertEqual(calculate_score(state), 0)
@@ -30,7 +25,6 @@ class TestCalculateScore(unittest.TestCase):
 
 
 class TestCheckGameOver(unittest.TestCase):
-
     def test_game_not_over(self):
         state = GameState(turns_remaining=5)
         self.assertFalse(check_game_over(state))
@@ -45,7 +39,6 @@ class TestCheckGameOver(unittest.TestCase):
 
 
 class TestFloodfillReveal(unittest.TestCase):
-
     def test_floodfill_single_cell(self):
         board = Board(3, 3, 0)
         board.cells[1][1] = -1
@@ -98,7 +91,6 @@ class TestFloodfillReveal(unittest.TestCase):
 
 
 class TestProcessClick(unittest.TestCase):
-
     def test_click_out_of_bounds(self):
         board = Board(5, 5, 3)
         state = GameState()
@@ -127,7 +119,7 @@ class TestProcessClick(unittest.TestCase):
 
         result = process_click(board, state, 0, 0)
         self.assertFalse(result.valid)
-        self.assertIn('already over', result.message.lower())
+        self.assertIn("already over", result.message.lower())
 
     def test_click_on_egg(self):
         board = Board(5, 5, 0)
@@ -209,19 +201,18 @@ class TestProcessClick(unittest.TestCase):
 
 
 class TestProcessClickEdgeCases(unittest.TestCase):
-
     def test_click_returns_correct_structure(self):
         board = Board(3, 3, 1)
         state = GameState()
 
         result = process_click(board, state, 0, 0)
 
-        self.assertTrue(hasattr(result, 'valid'))
-        self.assertTrue(hasattr(result, 'message'))
-        self.assertTrue(hasattr(result, 'egg_found'))
-        self.assertTrue(hasattr(result, 'turns_delta'))
-        self.assertTrue(hasattr(result, 'cells_revealed'))
-        self.assertTrue(hasattr(result, 'game_over'))
+        self.assertTrue(hasattr(result, "valid"))
+        self.assertTrue(hasattr(result, "message"))
+        self.assertTrue(hasattr(result, "egg_found"))
+        self.assertTrue(hasattr(result, "turns_delta"))
+        self.assertTrue(hasattr(result, "cells_revealed"))
+        self.assertTrue(hasattr(result, "game_over"))
 
     def test_revealed_egg_not_collected(self):
         """Eggs should never be revealed by floodfill, only by direct clicks."""
@@ -239,5 +230,5 @@ class TestProcessClickEdgeCases(unittest.TestCase):
         self.assertNotIn((2, 2), state.eggs_collected)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

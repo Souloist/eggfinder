@@ -1,11 +1,11 @@
 """Unit tests for model.py (GameState)."""
 
 import unittest
+
 from eggfinder.model import GameState
 
 
 class TestGameState(unittest.TestCase):
-
     def test_default_initialization(self):
         state = GameState()
         self.assertEqual(state.turns_remaining, 10)
@@ -48,5 +48,5 @@ class TestGameState(unittest.TestCase):
         self.assertEqual(state.score, 5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

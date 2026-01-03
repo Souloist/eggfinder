@@ -10,24 +10,24 @@ Architecture:
     State + Action → New State → Render
 """
 
-from .model import GameState
 from .board import Board
-from .game_logic import process_click, floodfill_reveal, calculate_score, check_game_over
-from .view import render_full_game, render_board, render_game_status
+from .game_logic import calculate_score, check_game_over, floodfill_reveal, process_click
+from .model import GameState
+from .view import render_board, render_full_game, render_game_status
 
 __all__ = [
     # Core types
-    'GameState',
-    'Board',
+    "GameState",
+    "Board",
     # Game logic
-    'process_click',
-    'floodfill_reveal',
-    'calculate_score',
-    'check_game_over',
+    "process_click",
+    "floodfill_reveal",
+    "calculate_score",
+    "check_game_over",
     # Display
-    'render_full_game',
-    'render_board',
-    'render_game_status',
+    "render_full_game",
+    "render_board",
+    "render_game_status",
 ]
 
-__version__ = '0.1.0'
+__version__ = "0.1.0"

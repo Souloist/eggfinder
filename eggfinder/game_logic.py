@@ -1,8 +1,8 @@
 from collections import deque
-from typing import Optional
+
 from .board import Board
+from .constants import CellType, GameConfig
 from .model import GameState
-from .constants import GameConfig, CellType
 from .types import ClickResult
 
 
@@ -44,18 +44,18 @@ def floodfill_reveal(board: Board, row: int, col: int) -> int:
     return cells_revealed
 
 
-def _validate_click(board: Board, game_state: GameState, row: int, col: int) -> Optional[ClickResult]:
+def _validate_click(board: Board, game_state: GameState, row: int, col: int) -> ClickResult | None:
     """Validate click preconditions. Returns ClickResult if invalid, None if valid."""
     if game_state.game_over:
-        return ClickResult.invalid('Game is already over!', game_over=True)
+        return ClickResult.invalid("Game is already over!", game_over=True)
 
     if not board.is_valid_position(row, col):
         return ClickResult.invalid(
-            f'Invalid position ({row}, {col}). Must be within bounds: 0-{board.height-1}, 0-{board.width-1}'
+            f"Invalid position ({row}, {col}). Must be within bounds: 0-{board.height - 1}, 0-{board.width - 1}"
         )
 
     if board.revealed[row][col]:
-        return ClickResult.invalid(f'Cell ({row}, {col}) is already revealed!')
+        return ClickResult.invalid(f"Cell ({row}, {col}) is already revealed!")
 
     return None
 
@@ -71,12 +71,10 @@ def _handle_egg_click(board: Board, game_state: GameState, row: int, col: int) -
     if game_over:
         game_state.game_over = True
 
-    message = f'Found an egg at ({row}, {col})! +{GameConfig.EGG_BONUS_TURNS} turns. Eggs collected: {len(game_state.eggs_collected)}/{board.egg_count}'
+    message = f"Found an egg at ({row}, {col})! +{GameConfig.EGG_BONUS_TURNS} turns. Eggs collected: {len(game_state.eggs_collected)}/{board.egg_count}"
 
     return ClickResult.egg_collected(
-        message=message,
-        turns_delta=GameConfig.EGG_BONUS_TURNS,
-        game_over=game_over
+        message=message, turns_delta=GameConfig.EGG_BONUS_TURNS, game_over=game_over
     )
 
 
@@ -91,14 +89,12 @@ def _handle_cell_click(board: Board, game_state: GameState, row: int, col: int) 
 
     cell_value = board.cells[row][col]
     if cell_value == CellType.EMPTY:
-        message = f'Revealed {cells_revealed} cells. Turns remaining: {game_state.turns_remaining}'
+        message = f"Revealed {cells_revealed} cells. Turns remaining: {game_state.turns_remaining}"
     else:
-        message = f'Revealed number {cell_value}. Turns remaining: {game_state.turns_remaining}'
+        message = f"Revealed number {cell_value}. Turns remaining: {game_state.turns_remaining}"
 
     return ClickResult.cell_revealed(
-        message=message,
-        cells_revealed=cells_revealed,
-        game_over=game_over
+        message=message, cells_revealed=cells_revealed, game_over=game_over
     )
 
 

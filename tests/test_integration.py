@@ -1,6 +1,7 @@
 """Integration tests for full game flow."""
 
 import unittest
+
 from eggfinder import Board, GameState, process_click, render_full_game
 
 
@@ -136,7 +137,7 @@ class TestGameIntegration(unittest.TestCase):
         # Render initial state
         output = render_full_game(board, state)
         self.assertIsInstance(output, str)
-        self.assertIn('Turns', output)
+        self.assertIn("Turns", output)
 
         # Make some moves and render
         for row in range(3):
@@ -186,6 +187,7 @@ class TestGameIntegration(unittest.TestCase):
     def test_deterministic_board_state(self):
         # Create two identical boards by using same random seed
         import random
+
         random.seed(42)
         board1 = Board(5, 5, 3)
 
@@ -258,5 +260,5 @@ class TestEdgeCaseGames(unittest.TestCase):
         self.assertTrue(result.valid)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

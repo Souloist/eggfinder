@@ -1,7 +1,6 @@
 import random
-from typing import Set, Tuple, List, Optional
 
-from .constants import GameConfig, CellType
+from .constants import CellType, GameConfig
 from .exceptions import InvalidBoardError
 
 
@@ -12,25 +11,21 @@ class Board:
         self,
         width: int = GameConfig.DEFAULT_BOARD_WIDTH,
         height: int = GameConfig.DEFAULT_BOARD_HEIGHT,
-        egg_count: int = GameConfig.DEFAULT_EGG_COUNT
+        egg_count: int = GameConfig.DEFAULT_EGG_COUNT,
     ):
         if width <= 0 or height <= 0:
-            raise InvalidBoardError(
-                f"Board dimensions must be positive, got {width}x{height}"
-            )
+            raise InvalidBoardError(f"Board dimensions must be positive, got {width}x{height}")
 
         max_eggs = width * height
         if egg_count < 0 or egg_count > max_eggs:
-            raise InvalidBoardError(
-                f"Egg count must be between 0 and {max_eggs}, got {egg_count}"
-            )
+            raise InvalidBoardError(f"Egg count must be between 0 and {max_eggs}, got {egg_count}")
 
         self.width = width
         self.height = height
         self.egg_count = egg_count
-        self.cells: List[List[int]] = []
-        self.revealed: List[List[bool]] = []
-        self.eggs: Set[Tuple[int, int]] = set()
+        self.cells: list[list[int]] = []
+        self.revealed: list[list[bool]] = []
+        self.eggs: set[tuple[int, int]] = set()
 
         self._initialize()
         self._place_eggs()
@@ -60,15 +55,12 @@ class Board:
 
     def _count_adjacent_eggs(self, row: int, col: int) -> int:
         """Count eggs adjacent to the given position."""
-        return sum(
-            1 for nr, nc in self.get_neighbors(row, col)
-            if self.is_egg(nr, nc)
-        )
+        return sum(1 for nr, nc in self.get_neighbors(row, col) if self.is_egg(nr, nc))
 
     def is_valid_position(self, row: int, col: int) -> bool:
         return 0 <= row < self.height and 0 <= col < self.width
 
-    def get_cell(self, row: int, col: int) -> Optional[int]:
+    def get_cell(self, row: int, col: int) -> int | None:
         if not self.is_valid_position(row, col):
             return None
         return self.cells[row][col]
@@ -81,7 +73,7 @@ class Board:
             return False
         return self.revealed[row][col]
 
-    def get_neighbors(self, row: int, col: int) -> List[Tuple[int, int]]:
+    def get_neighbors(self, row: int, col: int) -> list[tuple[int, int]]:
         neighbors = []
         for dr in [-1, 0, 1]:
             for dc in [-1, 0, 1]:

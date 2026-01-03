@@ -2,13 +2,13 @@
 
 import argparse
 import sys
-from typing import Optional, Tuple
+
 from eggfinder import Board, GameState, process_click, render_full_game
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description='EggFinder - A minesweeper-like game where you collect eggs!',
+        description="EggFinder - A minesweeper-like game where you collect eggs!",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Game Rules:
@@ -20,27 +20,24 @@ Game Rules:
 Display:
   ★ = collected egg    ○ = revealed egg    ■ = hidden cell
   · = empty cell       1-8 = adjacent egg count
-        """
+        """,
     )
-    parser.add_argument('-W', '--width', type=int, default=10,
-                        help='Board width (default: 10)')
-    parser.add_argument('-H', '--height', type=int, default=10,
-                        help='Board height (default: 10)')
-    parser.add_argument('-e', '--eggs', type=int, default=10,
-                        help='Number of eggs (default: 10)')
+    parser.add_argument("-W", "--width", type=int, default=10, help="Board width (default: 10)")
+    parser.add_argument("-H", "--height", type=int, default=10, help="Board height (default: 10)")
+    parser.add_argument("-e", "--eggs", type=int, default=10, help="Number of eggs (default: 10)")
     return parser.parse_args()
 
 
-def get_user_input() -> Optional[Tuple[int, int]]:
+def get_user_input() -> tuple[int, int] | None:
     """Get user input for row and column. Returns (row, col) or None to quit."""
     while True:
         try:
             user_input = input("\nEnter coordinates (row col) or 'q' to quit: ").strip().lower()
 
-            if user_input in ['q', 'quit', 'exit']:
+            if user_input in ["q", "quit", "exit"]:
                 return None
 
-            if user_input in ['h', 'help']:
+            if user_input in ["h", "help"]:
                 print("\nCommands:")
                 print("  row col  - Click cell at (row, col), e.g., '3 5'")
                 print("  q, quit  - Quit the game")
@@ -105,7 +102,7 @@ def main() -> None:
         print("Perfect! You collected all the eggs!")
 
     show_solution = input("\nShow egg locations? (y/n): ").strip().lower()
-    if show_solution in ['y', 'yes']:
+    if show_solution in ["y", "yes"]:
         print("\nBoard with all eggs revealed:")
         print(render_full_game(board, game_state, show_all=True))
 

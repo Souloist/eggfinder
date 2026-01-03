@@ -1,6 +1,6 @@
 from .board import Board
+from .constants import CellDisplay, CellType
 from .model import GameState
-from .constants import CellType, CellDisplay
 
 
 def render_board(board: Board, game_state: GameState, show_all: bool = False) -> str:
@@ -50,7 +50,9 @@ def render_game_status(game_state: GameState, board: Board) -> str:
         if len(game_state.eggs_collected) == board.egg_count:
             lines.append("Perfect! You collected all eggs!")
         else:
-            lines.append(f"You collected {len(game_state.eggs_collected)} out of {board.egg_count} eggs.")
+            lines.append(
+                f"You collected {len(game_state.eggs_collected)} out of {board.egg_count} eggs."
+            )
 
     lines.append("=" * 40)
     return "\n".join(lines)

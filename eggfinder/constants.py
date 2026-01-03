@@ -1,10 +1,11 @@
 """Game constants and configuration."""
 
-from enum import IntEnum, Enum
+from enum import Enum, IntEnum
 
 
 class GameConfig:
     """Game rule configuration."""
+
     DEFAULT_TURNS = 10
     EGG_BONUS_TURNS = 1
     DEFAULT_BOARD_WIDTH = 10
@@ -14,12 +15,14 @@ class GameConfig:
 
 class CellType(IntEnum):
     """Cell type constants for board representation."""
+
     EGG = -1
     EMPTY = 0
 
 
 class CellDisplay(str, Enum):
     """Display symbols for board cells."""
+
     COLLECTED_EGG = "★"
     REVEALED_EGG = "○"
     HIDDEN = "■"
