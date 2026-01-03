@@ -12,18 +12,18 @@ impl Difficulty {
     /// Returns (width, height, egg_count, starting_turns) for this difficulty.
     pub fn config(&self) -> (usize, usize, usize, i32) {
         match self {
-            Difficulty::Easy => (4, 4, 3, 4),
-            Difficulty::Medium => (7, 7, 7, 7),
-            Difficulty::Hard => (10, 10, 15, 10),
+            Difficulty::Easy => (5, 5, 3, 4),
+            Difficulty::Medium => (10, 10, 7, 7),
+            Difficulty::Hard => (12, 12, 15, 10),
         }
     }
 
     /// Returns the display name for menu.
     pub fn name(&self) -> &'static str {
         match self {
-            Difficulty::Easy => "Easy (4x4, 3 eggs, 4 turns)",
-            Difficulty::Medium => "Medium (7x7, 7 eggs, 7 turns)",
-            Difficulty::Hard => "Hard (10x10, 15 eggs, 10 turns)",
+            Difficulty::Easy => "Easy",
+            Difficulty::Medium => "Medium",
+            Difficulty::Hard => "Hard",
         }
     }
 }
