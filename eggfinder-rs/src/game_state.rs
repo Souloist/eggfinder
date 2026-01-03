@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use crate::board::Coordinate;
-use crate::constants::{Direction, GameConfig};
+use crate::constants::Direction;
 
 /// Tracks current game progress and TUI cursor position.
 #[derive(Debug)]
@@ -18,10 +18,10 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(board_width: usize, board_height: usize) -> Self {
+    pub fn new(board_width: usize, board_height: usize, starting_turns: i32) -> Self {
         GameState {
             cursor: (0, 0), // Start at top-left
-            turns_remaining: GameConfig::DEFAULT_TURNS,
+            turns_remaining: starting_turns,
             eggs_collected: HashSet::new(),
             game_over: false,
             score: 0,
@@ -75,10 +75,10 @@ impl GameState {
     }
 
     /// Collect an egg and update score. Returns true if newly collected.
+    /// Note: Collecting eggs does not affect turn count.
     pub fn collect_egg(&mut self, pos: Coordinate) -> bool {
         if self.eggs_collected.insert(pos) {
             self.score += 1;
-            self.turns_remaining += GameConfig::EGG_BONUS_TURNS;
             true
         } else {
             false

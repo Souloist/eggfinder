@@ -9,31 +9,23 @@ pub enum Difficulty {
 }
 
 impl Difficulty {
-    /// Returns (width, height, egg_count) for this difficulty.
-    pub fn config(&self) -> (usize, usize, usize) {
+    /// Returns (width, height, egg_count, starting_turns) for this difficulty.
+    pub fn config(&self) -> (usize, usize, usize, i32) {
         match self {
-            Difficulty::Easy => (9, 9, 6),
-            Difficulty::Medium => (16, 16, 8),
-            Difficulty::Hard => (25, 25, 10),
+            Difficulty::Easy => (4, 4, 3, 4),
+            Difficulty::Medium => (7, 7, 7, 7),
+            Difficulty::Hard => (10, 10, 15, 10),
         }
     }
 
     /// Returns the display name for menu.
     pub fn name(&self) -> &'static str {
         match self {
-            Difficulty::Easy => "Easy (9x9, 6 eggs)",
-            Difficulty::Medium => "Medium (16x16, 8 eggs)",
-            Difficulty::Hard => "Hard (25x25, 10 eggs)",
+            Difficulty::Easy => "Easy (4x4, 3 eggs, 4 turns)",
+            Difficulty::Medium => "Medium (7x7, 7 eggs, 7 turns)",
+            Difficulty::Hard => "Hard (10x10, 15 eggs, 10 turns)",
         }
     }
-}
-
-/// Game rule configuration constants.
-pub struct GameConfig;
-
-impl GameConfig {
-    pub const DEFAULT_TURNS: i32 = 10;
-    pub const EGG_BONUS_TURNS: i32 = 1;
 }
 
 /// Cell type constants for board representation.
@@ -57,11 +49,10 @@ impl CellType {
 pub struct CellDisplay;
 
 impl CellDisplay {
-    pub const COLLECTED_EGG: char = '★';
-    pub const REVEALED_EGG: char = '○';
+    pub const COLLECTED_EGG: char = '🥚'; // Egg emoji for collected
+    pub const REVEALED_EGG: char = '💩';  // Poop emoji for missed eggs at game end
     pub const HIDDEN: char = '■';
     pub const EMPTY: char = '·';
-    pub const CURSOR: char = '█'; // New: cursor indicator
 }
 
 /// Direction for cursor movement.

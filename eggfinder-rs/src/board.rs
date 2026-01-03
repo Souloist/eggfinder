@@ -186,4 +186,219 @@ impl Board {
             false
         }
     }
+
+    /// Create a board without any eggs (for testing).
+    #[cfg(test)]
+    pub fn new_empty(width: usize, height: usize) -> Result<Self, BoardError> {
+        if width == 0 || height == 0 {
+            return Err(BoardError::InvalidDimensions { width, height });
+        }
+
+        Ok(Board {
+            width,
+            height,
+            egg_count: 0,
+            cells: vec![vec![0; width]; height],
+            revealed: vec![vec![false; width]; height],
+            eggs: HashSet::new(),
+        })
+    }
+
+    /// Manually add an egg and recalculate numbers (for testing).
+    #[cfg(test)]
+    pub fn add_egg(&mut self, row: usize, col: usize) {
+        self.eggs.insert((row, col));
+        self.cells[row][col] = CellType::Egg.value();
+        self.egg_count += 1;
+        self.calculate_numbers();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_board_creation() {
+        let board = Board::new(5, 5, 3).unwrap();
+        assert_eq!(board.width, 5);
+        assert_eq!(board.height, 5);
+        assert_eq!(board.egg_count, 3);
+    }
+
+    #[test]
+    fn test_invalid_dimensions() {
+        assert!(Board::new(0, 5, 0).is_err());
+        assert!(Board::new(5, 0, 0).is_err());
+        assert!(Board::new(0, 0, 0).is_err());
+    }
+
+    #[test]
+    fn test_too_many_eggs() {
+        assert!(Board::new(3, 3, 10).is_err()); // 10 eggs in 9 cells
+    }
+
+    #[test]
+    fn test_cells_initialized() {
+        let board = Board::new(5, 5, 2).unwrap();
+        assert_eq!(board.cells.len(), 5);
+        assert_eq!(board.cells[0].len(), 5);
+    }
+
+    #[test]
+    fn test_revealed_array_initialized() {
+        let board = Board::new(5, 5, 2).unwrap();
+        for row in &board.revealed {
+            for &cell in row {
+                assert!(!cell);
+            }
+        }
+    }
+
+    #[test]
+    fn test_egg_placement_count() {
+        let board = Board::new(10, 10, 15).unwrap();
+        assert_eq!(board.eggs.len(), 15);
+
+        let egg_count = board
+            .cells
+            .iter()
+            .flat_map(|row| row.iter())
+            .filter(|&&cell| cell == -1)
+            .count();
+        assert_eq!(egg_count, 15);
+    }
+
+    #[test]
+    fn test_is_valid_position() {
+        let board = Board::new(5, 5, 2).unwrap();
+
+        assert!(board.is_valid_position(0, 0));
+        assert!(board.is_valid_position(4, 4));
+        assert!(board.is_valid_position(2, 3));
+
+        // usize can't be negative, so we just test upper bounds
+        assert!(!board.is_valid_position(5, 0));
+        assert!(!board.is_valid_position(0, 5));
+        assert!(!board.is_valid_position(10, 10));
+    }
+
+    #[test]
+    fn test_get_cell_valid() {
+        let board = Board::new_empty(5, 5).unwrap();
+        let cell = board.get_cell(0, 0);
+        assert!(cell.is_some());
+        assert_eq!(cell.unwrap(), 0);
+    }
+
+    #[test]
+    fn test_get_cell_invalid() {
+        let board = Board::new(5, 5, 2).unwrap();
+        assert!(board.get_cell(5, 0).is_none());
+        assert!(board.get_cell(0, 5).is_none());
+    }
+
+    #[test]
+    fn test_is_egg() {
+        let board = Board::new(5, 5, 3).unwrap();
+        for &egg_pos in &board.eggs {
+            assert!(board.is_egg(egg_pos.0, egg_pos.1));
+        }
+    }
+
+    #[test]
+    fn test_is_revealed() {
+        let mut board = Board::new(5, 5, 2).unwrap();
+
+        assert!(!board.is_revealed(0, 0));
+
+        board.revealed[2][3] = true;
+        assert!(board.is_revealed(2, 3));
+
+        assert!(!board.is_revealed(5, 5)); // Out of bounds
+    }
+
+    #[test]
+    fn test_get_neighbors_corner() {
+        let board = Board::new_empty(5, 5).unwrap();
+
+        let neighbors = board.get_neighbors(0, 0);
+        assert_eq!(neighbors.len(), 3);
+
+        let expected: HashSet<_> = [(0, 1), (1, 0), (1, 1)].into_iter().collect();
+        let actual: HashSet<_> = neighbors.into_iter().collect();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_get_neighbors_edge() {
+        let board = Board::new_empty(5, 5).unwrap();
+        let neighbors = board.get_neighbors(0, 2);
+        assert_eq!(neighbors.len(), 5);
+    }
+
+    #[test]
+    fn test_get_neighbors_center() {
+        let board = Board::new_empty(5, 5).unwrap();
+        let neighbors = board.get_neighbors(2, 2);
+        assert_eq!(neighbors.len(), 8);
+    }
+
+    #[test]
+    fn test_number_calculation_no_eggs() {
+        let board = Board::new_empty(5, 5).unwrap();
+        for row in &board.cells {
+            for &cell in row {
+                assert_eq!(cell, 0);
+            }
+        }
+    }
+
+    #[test]
+    fn test_number_calculation_with_eggs() {
+        let mut board = Board::new_empty(3, 3).unwrap();
+
+        // Place egg at center
+        board.add_egg(1, 1);
+
+        // All 8 neighbors should have value 1
+        let expected = [[1, 1, 1], [1, -1, 1], [1, 1, 1]];
+
+        for row in 0..3 {
+            for col in 0..3 {
+                assert_eq!(
+                    board.cells[row][col], expected[row][col],
+                    "Mismatch at ({}, {})",
+                    row, col
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_two_adjacent_eggs() {
+        let mut board = Board::new_empty(3, 3).unwrap();
+
+        // Place two adjacent eggs
+        board.eggs.insert((1, 0));
+        board.eggs.insert((1, 1));
+        board.cells[1][0] = CellType::Egg.value();
+        board.cells[1][1] = CellType::Egg.value();
+        board.egg_count = 2;
+        board.calculate_numbers();
+
+        assert_eq!(board.cells[0][0], 2);
+        assert_eq!(board.cells[0][1], 2);
+        assert_eq!(board.cells[1][2], 1);
+    }
+
+    #[test]
+    fn test_reveal() {
+        let mut board = Board::new_empty(3, 3).unwrap();
+
+        assert!(board.reveal(1, 1)); // First reveal returns true
+        assert!(board.revealed[1][1]);
+
+        assert!(!board.reveal(1, 1)); // Second reveal returns false
+    }
 }
