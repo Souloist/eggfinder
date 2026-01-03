@@ -2,13 +2,22 @@
 
 use std::io;
 use std::panic;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use ratatui::{
+    backend::CrosstermBackend,
+    style::{Color, Style},
+    widgets::Block,
+    Terminal,
+};
+
+use eggfinder_rs::ui::{self, AppScreen};
+use eggfinder_rs::{floodfill_reveal, AnimationManager, Board, Difficulty, Direction, GameState};
 
 /// Install a panic hook that restores the terminal before printing the panic message.
 /// This ensures the terminal is usable even if the app crashes.
@@ -22,21 +31,6 @@ fn install_panic_hook() {
         original_hook(panic_info);
     }));
 }
-use ratatui::{
-    backend::CrosstermBackend,
-    style::{Color, Style},
-    widgets::Block,
-    Terminal,
-};
-use tachyonfx::EffectManager;
-
-use eggfinder_rs::ui::{self, AppScreen};
-use eggfinder_rs::{floodfill_reveal, Board, Difficulty, Direction, GameState};
-
-/// Animation duration constants
-const EGG_FLASH_DURATION_MS: u64 = 500;
-const REVEAL_ANIMATION_DURATION_MS: u64 = 250;
-const REVEAL_WAVE_DELAY_MS: u64 = 50; // Delay per BFS depth level
 
 struct App {
     screen: AppScreen,
@@ -44,12 +38,7 @@ struct App {
     difficulty: Option<Difficulty>,
     board: Option<Board>,
     state: Option<GameState>,
-    effects: EffectManager<()>,
-    last_frame: Instant,
-    /// Cell that should flash (row, col, start_time) for egg collection
-    egg_flash: Option<(usize, usize, Instant)>,
-    /// Cells animating from floodfill reveal: (row, col, depth, start_time)
-    reveal_animations: Vec<(usize, usize, usize, Instant)>,
+    animations: AnimationManager,
 }
 
 impl App {
@@ -60,10 +49,7 @@ impl App {
             difficulty: None,
             board: None,
             state: None,
-            effects: EffectManager::default(),
-            last_frame: Instant::now(),
-            egg_flash: None,
-            reveal_animations: Vec::new(),
+            animations: AnimationManager::new(),
         }
     }
 
@@ -71,17 +57,15 @@ impl App {
     fn start_game(&mut self) -> bool {
         let difficulties = [Difficulty::Easy, Difficulty::Medium, Difficulty::Hard];
         let diff = difficulties[self.menu_selection];
-        let (width, height, eggs, turns) = diff.config();
+        let (width, height, eggs, _) = diff.config();
 
         match Board::new(width, height, eggs) {
             Ok(board) => {
                 self.difficulty = Some(diff);
                 self.board = Some(board);
-                self.state = Some(GameState::new(width, height, turns));
+                self.state = Some(GameState::new(diff));
                 self.screen = AppScreen::Playing;
-                self.effects = EffectManager::default();
-                self.egg_flash = None;
-                self.reveal_animations.clear();
+                self.animations.clear();
                 true
             }
             Err(_) => false,
@@ -94,9 +78,7 @@ impl App {
         self.difficulty = None;
         self.board = None;
         self.state = None;
-        self.effects = EffectManager::default();
-        self.egg_flash = None;
-        self.reveal_animations.clear();
+        self.animations.clear();
     }
 
     /// Handle revealing a cell at the cursor position.
@@ -138,15 +120,12 @@ impl App {
 
         // Trigger cell-specific flash for egg collection
         if let Some((row, col)) = found_egg_at {
-            self.egg_flash = Some((row, col, Instant::now()));
+            self.animations.start_egg_flash(row, col);
         }
 
         // Start wave animation for revealed cells
         if !revealed_cells.is_empty() {
-            let now = Instant::now();
-            for (row, col, depth) in revealed_cells {
-                self.reveal_animations.push((row, col, depth, now));
-            }
+            self.animations.start_reveal_wave(revealed_cells);
         }
     }
 }
@@ -174,53 +153,12 @@ fn main() -> io::Result<()> {
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> io::Result<()> {
     loop {
-        // Calculate delta time for animations
-        let elapsed = app.last_frame.elapsed();
-        app.last_frame = Instant::now();
+        // Update animations (cleans up completed ones)
+        app.animations.update();
 
-        // Calculate flash cell progress (0.0 = start, 1.0 = done)
-        let flash_cell = app.egg_flash.and_then(|(row, col, start_time)| {
-            let elapsed_ms = start_time.elapsed().as_millis() as u64;
-            if elapsed_ms >= EGG_FLASH_DURATION_MS {
-                None // Animation done
-            } else {
-                let progress = elapsed_ms as f32 / EGG_FLASH_DURATION_MS as f32;
-                Some((row, col, progress))
-            }
-        });
-
-        // Clear flash if animation is done
-        if app.egg_flash.is_some() && flash_cell.is_none() {
-            app.egg_flash = None;
-        }
-
-        // Calculate reveal animation progress for each cell: (row, col, progress 0.0-1.0)
-        let mut animating_cells: Vec<(usize, usize, f32)> = Vec::new();
-        let mut finished_indices: Vec<usize> = Vec::new();
-
-        for (i, (row, col, depth, start_time)) in app.reveal_animations.iter().enumerate() {
-            let delay_ms = (*depth as u64) * REVEAL_WAVE_DELAY_MS;
-            let elapsed_ms = start_time.elapsed().as_millis() as u64;
-
-            if elapsed_ms < delay_ms {
-                // Still waiting for this cell to start
-                animating_cells.push((*row, *col, 0.0));
-            } else {
-                let anim_elapsed = elapsed_ms - delay_ms;
-                if anim_elapsed >= REVEAL_ANIMATION_DURATION_MS {
-                    // Animation finished for this cell
-                    finished_indices.push(i);
-                } else {
-                    let progress = anim_elapsed as f32 / REVEAL_ANIMATION_DURATION_MS as f32;
-                    animating_cells.push((*row, *col, progress));
-                }
-            }
-        }
-
-        // Remove finished animations (reverse order to preserve indices)
-        for i in finished_indices.into_iter().rev() {
-            app.reveal_animations.remove(i);
-        }
+        // Get animation data for rendering
+        let flash_cell = app.animations.flash_cell();
+        let animating_cells = app.animations.animating_cells();
 
         terminal.draw(|frame| {
             let area = frame.area();
@@ -244,10 +182,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App)
                     }
                 }
             }
-
-            // Apply tachyonfx effects
-            app.effects
-                .process_effects(elapsed.into(), frame.buffer_mut(), area);
         })?;
 
         // Poll for events with a short timeout to keep animations smooth

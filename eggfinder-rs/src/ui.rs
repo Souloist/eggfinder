@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 use crate::board::Board;
-use crate::constants::{CellDisplay, CellType, Difficulty};
+use crate::constants::{CellDisplay, CellType, Difficulty, UiColors};
 use crate::game_state::GameState;
 
 /// Egg-themed yellow color for borders.
@@ -26,6 +26,17 @@ pub enum AppScreen {
     DifficultySelect,
     Playing,
     GameOver,
+}
+
+/// Animation state for rendering a single cell.
+#[derive(Debug, Clone, Copy, Default)]
+struct CellAnimation {
+    /// Whether this cell is flashing (egg collection).
+    is_flashing: bool,
+    /// Flash animation progress (0.0 to 1.0).
+    flash_progress: f32,
+    /// Reveal animation progress (0.0 to 1.0), if animating.
+    reveal_progress: Option<f32>,
 }
 
 /// Render the difficulty selection menu.
@@ -113,7 +124,7 @@ pub fn render_game(
     render_egg_counter(frame, game_chunks[1], board, state);
 }
 
-fn render_status(frame: &mut Frame, area: Rect, board: &Board, state: &GameState) {
+fn render_status(frame: &mut Frame, area: Rect, _board: &Board, state: &GameState) {
     let status_text = format!(
         "Turns: {} | WASD: move | SPACE: reveal | B: back | Q: quit",
         state.turns_remaining
@@ -129,20 +140,11 @@ fn render_status(frame: &mut Frame, area: Rect, board: &Board, state: &GameState
                 .border_type(BorderType::Rounded)
                 .title(format!(
                     "🥚 EggFinder - {} Mode",
-                    get_difficulty_name(board)
+                    state.difficulty.name()
                 )),
         );
 
     frame.render_widget(status, area);
-}
-
-fn get_difficulty_name(board: &Board) -> &'static str {
-    match (board.width, board.height) {
-        (9, 9) => "Easy",
-        (16, 16) => "Medium",
-        (25, 25) => "Hard",
-        _ => "Custom",
-    }
 }
 
 fn render_board(
@@ -203,33 +205,29 @@ fn render_board(
             .split(*row_rect);
 
         for (col, cell_rect) in col_rects.iter().enumerate() {
-            // Check if this cell should flash (egg collection)
-            let is_flashing = flash_cell
-                .map(|(fr, fc, _)| fr == row && fc == col)
-                .unwrap_or(false);
-            let flash_progress = if is_flashing {
-                flash_cell.map(|(_, _, p)| p).unwrap_or(1.0)
-            } else {
-                1.0
+            // Build animation state for this cell
+            let animation = {
+                let is_flashing = flash_cell
+                    .map(|(fr, fc, _)| fr == row && fc == col)
+                    .unwrap_or(false);
+                let flash_progress = if is_flashing {
+                    flash_cell.map(|(_, _, p)| p).unwrap_or(1.0)
+                } else {
+                    1.0
+                };
+                let reveal_progress = animating_cells
+                    .iter()
+                    .find(|(r, c, _)| *r == row && *c == col)
+                    .map(|(_, _, p)| *p);
+
+                CellAnimation {
+                    is_flashing,
+                    flash_progress,
+                    reveal_progress,
+                }
             };
 
-            // Check if this cell is animating (wave reveal)
-            let reveal_progress = animating_cells
-                .iter()
-                .find(|(r, c, _)| *r == row && *c == col)
-                .map(|(_, _, p)| *p);
-
-            render_cell(
-                frame,
-                *cell_rect,
-                board,
-                state,
-                row,
-                col,
-                is_flashing,
-                flash_progress,
-                reveal_progress,
-            );
+            render_cell(frame, *cell_rect, board, state, row, col, animation);
         }
     }
 }
@@ -241,33 +239,27 @@ fn render_cell(
     state: &GameState,
     row: usize,
     col: usize,
-    is_flashing: bool,
-    flash_progress: f32,
-    reveal_progress: Option<f32>,
+    animation: CellAnimation,
 ) {
     let is_cursor = state.is_cursor_at(row, col);
     let is_revealed = board.is_revealed(row, col);
     let (content, content_style) = get_cell_content(board, state, row, col);
 
-    // Bright egg yolk yellow for cursor and animations
-    let egg_yolk = Color::Rgb(255, 200, 0);
-
     // Determine cell style, border color, and optional inner background
     let (cell_style, border_color, inner_bg) = if !is_revealed {
         // Unrevealed cell: brown background with yellow border
-        let brown = Color::Rgb(139, 90, 43); // Saddle brown
         if is_cursor {
             // Cursor on unrevealed: bright egg yolk border
-            (Style::default(), egg_yolk, Some(brown))
+            (Style::default(), UiColors::EGG_YOLK, Some(UiColors::TILE_BROWN))
         } else {
-            (Style::default(), Color::Yellow, Some(brown))
+            (Style::default(), Color::Yellow, Some(UiColors::TILE_BROWN))
         }
-    } else if let Some(progress) = reveal_progress {
+    } else if let Some(progress) = animation.reveal_progress {
         // Wave reveal animation: transition from egg yolk to yellow to normal
         if progress < 1.0 {
             // Interpolate border color from egg yolk to yellow to dark gray
             let border_color = if progress < 0.3 {
-                egg_yolk // Bright egg yolk yellow
+                UiColors::EGG_YOLK
             } else if progress < 0.6 {
                 Color::Yellow
             } else {
@@ -275,7 +267,7 @@ fn render_cell(
             };
             // Show content with egg yolk tint during animation
             let style = if progress < 0.5 {
-                Style::default().fg(egg_yolk)
+                Style::default().fg(UiColors::EGG_YOLK)
             } else {
                 content_style
             };
@@ -283,18 +275,18 @@ fn render_cell(
         } else {
             (content_style, Color::DarkGray, None)
         }
-    } else if is_flashing && flash_progress < 1.0 {
+    } else if animation.is_flashing && animation.flash_progress < 1.0 {
         // Flashing cell: bright egg yolk border that fades
-        let intensity = 1.0 - flash_progress;
+        let intensity = 1.0 - animation.flash_progress;
         let border_color = if intensity > 0.5 {
-            egg_yolk
+            UiColors::EGG_YOLK
         } else {
             Color::Yellow
         };
         (content_style, border_color, None)
     } else if is_cursor {
         // Cursor cell: bright egg yolk border
-        (content_style, egg_yolk, None)
+        (content_style, UiColors::EGG_YOLK, None)
     } else {
         (content_style, Color::DarkGray, None)
     };

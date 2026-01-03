@@ -1,5 +1,7 @@
 //! Game constants and configuration.
 
+use ratatui::style::Color;
+
 /// Difficulty level for the game.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Difficulty {
@@ -49,10 +51,8 @@ impl CellType {
 pub struct CellDisplay;
 
 impl CellDisplay {
-    pub const COLLECTED_EGG: char = '🥚'; // Egg emoji for collected
-    pub const REVEALED_EGG: char = '💩';  // Poop emoji for missed eggs at game end
-    pub const HIDDEN: char = '■';
-    pub const EMPTY: char = '·';
+    pub const COLLECTED_EGG: char = '🥚';
+    pub const REVEALED_EGG: char = '💩';
 }
 
 /// Direction for cursor movement.
@@ -62,4 +62,16 @@ pub enum Direction {
     Down,
     Left,
     Right,
+}
+
+/// UI color constants.
+pub struct UiColors;
+
+impl UiColors {
+    /// Bright egg yolk yellow for cursor and animations.
+    pub const EGG_YOLK: Color = Color::Rgb(255, 200, 0);
+    /// Brown color for unrevealed tiles.
+    pub const TILE_BROWN: Color = Color::Rgb(139, 90, 43);
+    /// Orange for wave animation start.
+    pub const WAVE_ORANGE: Color = Color::Rgb(255, 165, 0);
 }

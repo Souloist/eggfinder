@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use crate::board::Coordinate;
-use crate::constants::Direction;
+use crate::constants::{Difficulty, Direction};
 
 /// Tracks current game progress and TUI cursor position.
 #[derive(Debug)]
@@ -13,20 +13,23 @@ pub struct GameState {
     pub eggs_collected: HashSet<Coordinate>,
     pub game_over: bool,
     pub score: u32,
+    pub difficulty: Difficulty,
     board_width: usize,
     board_height: usize,
 }
 
 impl GameState {
-    pub fn new(board_width: usize, board_height: usize, starting_turns: i32) -> Self {
+    pub fn new(difficulty: Difficulty) -> Self {
+        let (width, height, _, turns) = difficulty.config();
         GameState {
             cursor: (0, 0), // Start at top-left
-            turns_remaining: starting_turns,
+            turns_remaining: turns,
             eggs_collected: HashSet::new(),
             game_over: false,
             score: 0,
-            board_width,
-            board_height,
+            difficulty,
+            board_width: width,
+            board_height: height,
         }
     }
 
@@ -106,17 +109,20 @@ mod tests {
 
     #[test]
     fn test_new_game_state() {
-        let state = GameState::new(5, 5, 10);
+        let (_, _, _, expected_turns) = Difficulty::Easy.config();
+        let state = GameState::new(Difficulty::Easy);
+
         assert_eq!(state.cursor, (0, 0));
-        assert_eq!(state.turns_remaining, 10);
+        assert_eq!(state.turns_remaining, expected_turns);
         assert!(state.eggs_collected.is_empty());
         assert!(!state.game_over);
         assert_eq!(state.score, 0);
+        assert_eq!(state.difficulty, Difficulty::Easy);
     }
 
     #[test]
     fn test_collect_egg_does_not_affect_turns() {
-        let mut state = GameState::new(5, 5, 10);
+        let mut state = GameState::new(Difficulty::Easy);
         let initial_turns = state.turns_remaining;
 
         state.collect_egg((0, 0));
@@ -128,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_collect_egg_returns_false_for_duplicate() {
-        let mut state = GameState::new(5, 5, 10);
+        let mut state = GameState::new(Difficulty::Easy);
 
         assert!(state.collect_egg((0, 0))); // First collection
         assert!(!state.collect_egg((0, 0))); // Duplicate
@@ -139,20 +145,25 @@ mod tests {
 
     #[test]
     fn test_use_turn_decrements_turns() {
-        let mut state = GameState::new(5, 5, 10);
+        let mut state = GameState::new(Difficulty::Medium); // 7 turns
+        let initial_turns = state.turns_remaining;
 
         state.use_turn();
 
-        assert_eq!(state.turns_remaining, 9);
+        assert_eq!(state.turns_remaining, initial_turns - 1);
         assert!(!state.game_over);
     }
 
     #[test]
     fn test_use_turn_triggers_game_over_at_zero() {
-        let mut state = GameState::new(5, 5, 1); // Start with 1 turn
+        let (_, _, _, starting_turns) = Difficulty::Easy.config();
+        let mut state = GameState::new(Difficulty::Easy);
 
-        assert!(!state.game_over);
-        state.use_turn();
+        // Use all turns
+        for _ in 0..starting_turns {
+            assert!(!state.game_over);
+            state.use_turn();
+        }
 
         assert_eq!(state.turns_remaining, 0);
         assert!(state.game_over);
@@ -160,7 +171,7 @@ mod tests {
 
     #[test]
     fn test_all_eggs_collected() {
-        let mut state = GameState::new(5, 5, 10);
+        let mut state = GameState::new(Difficulty::Easy);
 
         state.collect_egg((0, 0));
         state.collect_egg((1, 1));
@@ -172,7 +183,10 @@ mod tests {
 
     #[test]
     fn test_cursor_movement_respects_bounds() {
-        let mut state = GameState::new(3, 3, 10);
+        let (width, height, _, _) = Difficulty::Easy.config();
+        let mut state = GameState::new(Difficulty::Easy);
+        let max_row = height - 1;
+        let max_col = width - 1;
 
         // At (0,0), can't go up or left
         state.move_cursor(Direction::Up);
@@ -187,20 +201,22 @@ mod tests {
         assert_eq!(state.cursor, (1, 1));
 
         // Move to bottom-right corner
-        state.move_cursor(Direction::Down);
-        state.move_cursor(Direction::Right);
-        assert_eq!(state.cursor, (2, 2));
+        for _ in 0..(max_row.max(max_col)) {
+            state.move_cursor(Direction::Down);
+            state.move_cursor(Direction::Right);
+        }
+        assert_eq!(state.cursor, (max_row, max_col));
 
         // Can't go beyond bounds
         state.move_cursor(Direction::Down);
-        assert_eq!(state.cursor, (2, 2));
+        assert_eq!(state.cursor, (max_row, max_col));
         state.move_cursor(Direction::Right);
-        assert_eq!(state.cursor, (2, 2));
+        assert_eq!(state.cursor, (max_row, max_col));
     }
 
     #[test]
     fn test_is_cursor_at() {
-        let mut state = GameState::new(5, 5, 10);
+        let mut state = GameState::new(Difficulty::Easy);
 
         assert!(state.is_cursor_at(0, 0));
         assert!(!state.is_cursor_at(1, 1));
