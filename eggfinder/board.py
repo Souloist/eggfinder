@@ -2,6 +2,7 @@ import random
 
 from .constants import CellType, GameConfig
 from .exceptions import InvalidBoardError
+from .types import Coordinate, Grid
 
 
 class Board:
@@ -23,9 +24,9 @@ class Board:
         self.width = width
         self.height = height
         self.egg_count = egg_count
-        self.cells: list[list[int]] = []
-        self.revealed: list[list[bool]] = []
-        self.eggs: set[tuple[int, int]] = set()
+        self.cells: Grid[int] = []
+        self.revealed: Grid[bool] = []
+        self.eggs: set[Coordinate] = set()
 
         self._initialize()
         self._place_eggs()
@@ -73,7 +74,7 @@ class Board:
             return False
         return self.revealed[row][col]
 
-    def get_neighbors(self, row: int, col: int) -> list[tuple[int, int]]:
+    def get_neighbors(self, row: int, col: int) -> list[Coordinate]:
         neighbors = []
         for dr in [-1, 0, 1]:
             for dc in [-1, 0, 1]:

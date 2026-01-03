@@ -1,6 +1,11 @@
 """Type definitions for EggFinder."""
 
 from dataclasses import dataclass
+from typing import Self
+
+# Type aliases for coordinate and grid types
+type Coordinate = tuple[int, int]
+type Grid[T] = list[list[T]]
 
 
 @dataclass(frozen=True)
@@ -18,7 +23,7 @@ class ClickResult:
     game_over: bool
 
     @classmethod
-    def invalid(cls, message: str, game_over: bool = False) -> "ClickResult":
+    def invalid(cls, message: str, game_over: bool = False) -> Self:
         """Create an invalid click result."""
         return cls(
             valid=False,
@@ -30,7 +35,7 @@ class ClickResult:
         )
 
     @classmethod
-    def egg_collected(cls, message: str, turns_delta: int, game_over: bool) -> "ClickResult":
+    def egg_collected(cls, message: str, turns_delta: int, game_over: bool) -> Self:
         """Create a result for collecting an egg."""
         return cls(
             valid=True,
@@ -42,7 +47,7 @@ class ClickResult:
         )
 
     @classmethod
-    def cell_revealed(cls, message: str, cells_revealed: int, game_over: bool) -> "ClickResult":
+    def cell_revealed(cls, message: str, cells_revealed: int, game_over: bool) -> Self:
         """Create a result for revealing normal cells."""
         return cls(
             valid=True,

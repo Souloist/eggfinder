@@ -3,7 +3,7 @@ name = "eggfinder"
 version = "0.1.0"
 description = "A minesweeper-like game where you collect eggs instead of avoiding mines"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "pydantic>=2.0.0",
 ]
@@ -21,7 +21,7 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [
@@ -33,6 +33,11 @@ select = [
     "C4",     # flake8-comprehensions
     "UP",     # pyupgrade
     "SIM",    # flake8-simplify
+    "PT",     # flake8-pytest-style
+    "RUF",    # Ruff-specific rules
+    "PERF",   # Performance anti-patterns
+    "TCH",    # Type-checking imports
+    "PIE",    # Misc. lints
 ]
 ignore = [
     "E501",   # line too long (handled by formatter)
@@ -41,10 +46,15 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["eggfinder"]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PT009"]  # Allow unittest-style assertions in test files
+
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-cast"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
