@@ -110,7 +110,7 @@ class TestBoard(unittest.TestCase):
             for col in range(board.width):
                 cell_value = board.cells[row][col]
                 if cell_value != -1:
-                    self.assertIn(cell_value, range(0, 9))
+                    self.assertIn(cell_value, range(9))
 
                     actual_count = 0
                     for nr, nc in board.get_neighbors(row, col):

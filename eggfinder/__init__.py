@@ -16,17 +16,17 @@ from .model import GameState
 from .view import render_board, render_full_game, render_game_status
 
 __all__ = [
+    "Board",
     # Core types
     "GameState",
-    "Board",
-    # Game logic
-    "process_click",
-    "floodfill_reveal",
     "calculate_score",
     "check_game_over",
+    "floodfill_reveal",
+    # Game logic
+    "process_click",
+    "render_board",
     # Display
     "render_full_game",
-    "render_board",
     "render_game_status",
 ]
 
