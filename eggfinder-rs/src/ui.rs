@@ -120,7 +120,14 @@ pub fn render_game(
         .constraints([Constraint::Min(0), Constraint::Length(22)])
         .split(main_chunks[1]);
 
-    render_board(frame, game_chunks[0], board, state, flash_cell, animating_cells);
+    render_board(
+        frame,
+        game_chunks[0],
+        board,
+        state,
+        flash_cell,
+        animating_cells,
+    );
     render_egg_counter(frame, game_chunks[1], board, state);
 }
 
@@ -138,10 +145,7 @@ fn render_status(frame: &mut Frame, area: Rect, _board: &Board, state: &GameStat
                 .borders(Borders::ALL)
                 .border_style(EGG_BORDER_STYLE)
                 .border_type(BorderType::Rounded)
-                .title(format!(
-                    "🥚 EggFinder - {} Mode",
-                    state.difficulty.name()
-                )),
+                .title(format!("🥚 EggFinder - {} Mode", state.difficulty.name())),
         );
 
     frame.render_widget(status, area);
@@ -250,7 +254,11 @@ fn render_cell(
         // Unrevealed cell: brown background with yellow border
         if is_cursor {
             // Cursor on unrevealed: bright egg yolk border
-            (Style::default(), UiColors::EGG_YOLK, Some(UiColors::TILE_BROWN))
+            (
+                Style::default(),
+                UiColors::EGG_YOLK,
+                Some(UiColors::TILE_BROWN),
+            )
         } else {
             (Style::default(), Color::Yellow, Some(UiColors::TILE_BROWN))
         }
