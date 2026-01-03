@@ -28,10 +28,15 @@ use ratatui::{
     widgets::Block,
     Terminal,
 };
-use tachyonfx::{fx, Effect, EffectManager, Interpolation};
+use tachyonfx::EffectManager;
 
 use eggfinder_rs::ui::{self, AppScreen};
 use eggfinder_rs::{floodfill_reveal, Board, Difficulty, Direction, GameState};
+
+/// Animation duration constants
+const EGG_FLASH_DURATION_MS: u64 = 500;
+const REVEAL_ANIMATION_DURATION_MS: u64 = 250;
+const REVEAL_WAVE_DELAY_MS: u64 = 50; // Delay per BFS depth level
 
 struct App {
     screen: AppScreen,
@@ -43,6 +48,8 @@ struct App {
     last_frame: Instant,
     /// Cell that should flash (row, col, start_time) for egg collection
     egg_flash: Option<(usize, usize, Instant)>,
+    /// Cells animating from floodfill reveal: (row, col, depth, start_time)
+    reveal_animations: Vec<(usize, usize, usize, Instant)>,
 }
 
 impl App {
@@ -56,6 +63,7 @@ impl App {
             effects: EffectManager::default(),
             last_frame: Instant::now(),
             egg_flash: None,
+            reveal_animations: Vec::new(),
         }
     }
 
@@ -73,6 +81,7 @@ impl App {
                 self.screen = AppScreen::Playing;
                 self.effects = EffectManager::default();
                 self.egg_flash = None;
+                self.reveal_animations.clear();
                 true
             }
             Err(_) => false,
@@ -87,13 +96,15 @@ impl App {
         self.state = None;
         self.effects = EffectManager::default();
         self.egg_flash = None;
+        self.reveal_animations.clear();
     }
 
     /// Handle revealing a cell at the cursor position.
     fn reveal_at_cursor(&mut self) {
-        // Track what happened to trigger effects after releasing borrows
+        // Track egg position for flash effect
         let mut found_egg_at: Option<(usize, usize)> = None;
-        let mut game_ended = false;
+        // Track revealed cells for wave animation
+        let mut revealed_cells: Vec<(usize, usize, usize)> = Vec::new();
 
         if let (Some(board), Some(state)) = (&mut self.board, &mut self.state) {
             let (row, col) = state.cursor_position();
@@ -107,14 +118,20 @@ impl App {
                 board.reveal(row, col);
                 state.collect_egg((row, col));
                 found_egg_at = Some((row, col));
+
+                // Check win condition: all eggs collected
+                if state.all_eggs_collected(board.egg_count) {
+                    state.game_over = true;
+                }
             } else {
                 // Normal cell - use floodfill to reveal connected empty cells
-                floodfill_reveal(board, row, col);
+                let result = floodfill_reveal(board, row, col);
+                revealed_cells = result.cells;
                 state.use_turn();
             }
 
-            game_ended = state.game_over;
-            if game_ended {
+            // Check if game ended (win or lose)
+            if state.game_over {
                 self.screen = AppScreen::GameOver;
             }
         }
@@ -124,15 +141,13 @@ impl App {
             self.egg_flash = Some((row, col, Instant::now()));
         }
 
-        if game_ended {
-            self.trigger_game_over_effect();
+        // Start wave animation for revealed cells
+        if !revealed_cells.is_empty() {
+            let now = Instant::now();
+            for (row, col, depth) in revealed_cells {
+                self.reveal_animations.push((row, col, depth, now));
+            }
         }
-    }
-
-    /// Trigger effect when game ends.
-    fn trigger_game_over_effect(&mut self) {
-        let effect: Effect = fx::fade_from_fg(Color::Yellow, (500, Interpolation::SineOut));
-        self.effects.add_effect(effect);
     }
 }
 
@@ -157,9 +172,6 @@ fn main() -> io::Result<()> {
     result
 }
 
-/// Duration of the egg flash animation in milliseconds.
-const EGG_FLASH_DURATION_MS: u64 = 500;
-
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> io::Result<()> {
     loop {
         // Calculate delta time for animations
@@ -182,6 +194,34 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App)
             app.egg_flash = None;
         }
 
+        // Calculate reveal animation progress for each cell: (row, col, progress 0.0-1.0)
+        let mut animating_cells: Vec<(usize, usize, f32)> = Vec::new();
+        let mut finished_indices: Vec<usize> = Vec::new();
+
+        for (i, (row, col, depth, start_time)) in app.reveal_animations.iter().enumerate() {
+            let delay_ms = (*depth as u64) * REVEAL_WAVE_DELAY_MS;
+            let elapsed_ms = start_time.elapsed().as_millis() as u64;
+
+            if elapsed_ms < delay_ms {
+                // Still waiting for this cell to start
+                animating_cells.push((*row, *col, 0.0));
+            } else {
+                let anim_elapsed = elapsed_ms - delay_ms;
+                if anim_elapsed >= REVEAL_ANIMATION_DURATION_MS {
+                    // Animation finished for this cell
+                    finished_indices.push(i);
+                } else {
+                    let progress = anim_elapsed as f32 / REVEAL_ANIMATION_DURATION_MS as f32;
+                    animating_cells.push((*row, *col, progress));
+                }
+            }
+        }
+
+        // Remove finished animations (reverse order to preserve indices)
+        for i in finished_indices.into_iter().rev() {
+            app.reveal_animations.remove(i);
+        }
+
         terminal.draw(|frame| {
             let area = frame.area();
 
@@ -195,7 +235,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App)
                 }
                 AppScreen::Playing => {
                     if let (Some(board), Some(state)) = (&app.board, &app.state) {
-                        ui::render_game(frame, board, state, flash_cell);
+                        ui::render_game(frame, board, state, flash_cell, &animating_cells);
                     }
                 }
                 AppScreen::GameOver => {

@@ -8,5 +8,5 @@ pub mod ui;
 
 pub use board::{Board, BoardError};
 pub use constants::{CellDisplay, CellType, Difficulty, Direction};
-pub use game_logic::floodfill_reveal;
+pub use game_logic::{floodfill_reveal, FloodfillResult};
 pub use game_state::GameState;

@@ -4,7 +4,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Paragraph},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -84,12 +84,14 @@ pub fn render_menu(frame: &mut Frame, selected: usize) {
 }
 
 /// Render the game board, status bar, and egg counter.
-/// `flash_cell` is an optional (row, col, progress) where progress is 0.0-1.0 for flash animation.
+/// `flash_cell` is an optional (row, col, progress) for egg flash animation.
+/// `animating_cells` contains cells being revealed with wave animation: (row, col, progress).
 pub fn render_game(
     frame: &mut Frame,
     board: &Board,
     state: &GameState,
     flash_cell: Option<(usize, usize, f32)>,
+    animating_cells: &[(usize, usize, f32)],
 ) {
     let area = frame.area();
 
@@ -107,7 +109,7 @@ pub fn render_game(
         .constraints([Constraint::Min(0), Constraint::Length(22)])
         .split(main_chunks[1]);
 
-    render_board(frame, game_chunks[0], board, state, flash_cell);
+    render_board(frame, game_chunks[0], board, state, flash_cell, animating_cells);
     render_egg_counter(frame, game_chunks[1], board, state);
 }
 
@@ -149,6 +151,7 @@ fn render_board(
     board: &Board,
     state: &GameState,
     flash_cell: Option<(usize, usize, f32)>,
+    animating_cells: &[(usize, usize, f32)],
 ) {
     // Create outer block with yellow border and title (fills available area)
     let outer_block = Block::default()
@@ -169,11 +172,11 @@ fn render_board(
     let inner_height = grid_height + 2;
     let inner_area = center_rect(outer_inner, inner_width, inner_height);
 
-    // Add inner boundary (tight border around the grid)
+    // Add inner boundary (tight border around the grid) with rounded edges
     let inner_block = Block::default()
         .borders(Borders::ALL)
         .border_style(EGG_BORDER_STYLE)
-        .border_type(BorderType::Thick);
+        .border_type(BorderType::Rounded);
 
     let grid_area = inner_block.inner(inner_area);
     frame.render_widget(inner_block, inner_area);
@@ -200,7 +203,7 @@ fn render_board(
             .split(*row_rect);
 
         for (col, cell_rect) in col_rects.iter().enumerate() {
-            // Check if this cell should flash
+            // Check if this cell should flash (egg collection)
             let is_flashing = flash_cell
                 .map(|(fr, fc, _)| fr == row && fc == col)
                 .unwrap_or(false);
@@ -210,7 +213,23 @@ fn render_board(
                 1.0
             };
 
-            render_cell(frame, *cell_rect, board, state, row, col, is_flashing, flash_progress);
+            // Check if this cell is animating (wave reveal)
+            let reveal_progress = animating_cells
+                .iter()
+                .find(|(r, c, _)| *r == row && *c == col)
+                .map(|(_, _, p)| *p);
+
+            render_cell(
+                frame,
+                *cell_rect,
+                board,
+                state,
+                row,
+                col,
+                is_flashing,
+                flash_progress,
+                reveal_progress,
+            );
         }
     }
 }
@@ -224,38 +243,91 @@ fn render_cell(
     col: usize,
     is_flashing: bool,
     flash_progress: f32,
+    reveal_progress: Option<f32>,
 ) {
     let is_cursor = state.is_cursor_at(row, col);
+    let is_revealed = board.is_revealed(row, col);
     let (content, content_style) = get_cell_content(board, state, row, col);
 
-    // Determine cell style and border color
-    let (cell_style, border_color) = if is_flashing && flash_progress < 1.0 {
-        // Flashing cell: bright yellow border that fades
+    // Bright egg yolk yellow for cursor and animations
+    let egg_yolk = Color::Rgb(255, 200, 0);
+
+    // Determine cell style, border color, and optional inner background
+    let (cell_style, border_color, inner_bg) = if !is_revealed {
+        // Unrevealed cell: brown background with yellow border
+        let brown = Color::Rgb(139, 90, 43); // Saddle brown
+        if is_cursor {
+            // Cursor on unrevealed: bright egg yolk border
+            (Style::default(), egg_yolk, Some(brown))
+        } else {
+            (Style::default(), Color::Yellow, Some(brown))
+        }
+    } else if let Some(progress) = reveal_progress {
+        // Wave reveal animation: transition from egg yolk to yellow to normal
+        if progress < 1.0 {
+            // Interpolate border color from egg yolk to yellow to dark gray
+            let border_color = if progress < 0.3 {
+                egg_yolk // Bright egg yolk yellow
+            } else if progress < 0.6 {
+                Color::Yellow
+            } else {
+                Color::DarkGray
+            };
+            // Show content with egg yolk tint during animation
+            let style = if progress < 0.5 {
+                Style::default().fg(egg_yolk)
+            } else {
+                content_style
+            };
+            (style, border_color, None)
+        } else {
+            (content_style, Color::DarkGray, None)
+        }
+    } else if is_flashing && flash_progress < 1.0 {
+        // Flashing cell: bright egg yolk border that fades
         let intensity = 1.0 - flash_progress;
         let border_color = if intensity > 0.5 {
-            Color::LightYellow
+            egg_yolk
         } else {
             Color::Yellow
         };
-        (content_style, border_color)
+        (content_style, border_color, None)
     } else if is_cursor {
-        // Cursor cell: yellow border only (no background change)
-        (content_style, Color::Yellow)
+        // Cursor cell: bright egg yolk border
+        (content_style, egg_yolk, None)
     } else {
-        (content_style, Color::DarkGray)
+        (content_style, Color::DarkGray, None)
     };
 
-    let cell = Paragraph::new(content)
-        .alignment(Alignment::Center)
-        .style(cell_style)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Thick)
-                .border_style(Style::default().fg(border_color)),
-        );
+    // Create the border block (thicker for cursor, rounded for others)
+    let border_type = if is_cursor {
+        BorderType::Thick
+    } else {
+        BorderType::Rounded
+    };
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(border_type)
+        .border_style(Style::default().fg(border_color));
 
-    frame.render_widget(cell, area);
+    // Get inner area (inside borders)
+    let inner_area = block.inner(area);
+
+    // Render the border first
+    frame.render_widget(block, area);
+
+    // If there's an inner background, fill it
+    if let Some(bg_color) = inner_bg {
+        let bg = Block::default().style(Style::default().bg(bg_color));
+        frame.render_widget(bg, inner_area);
+    }
+
+    // Render the content on top
+    let cell_content = Paragraph::new(content)
+        .alignment(Alignment::Center)
+        .style(cell_style);
+
+    frame.render_widget(cell_content, inner_area);
 }
 
 /// Get the content character and style for a cell.
@@ -265,10 +337,8 @@ fn get_cell_content(board: &Board, state: &GameState, row: usize, col: usize) ->
     let is_collected = state.eggs_collected.contains(&(row, col));
 
     if !is_revealed {
-        (
-            CellDisplay::HIDDEN.to_string(),
-            Style::default().fg(Color::Blue),
-        )
+        // Unrevealed cells show blank (background color indicates hidden state)
+        (" ".to_string(), Style::default())
     } else if is_egg {
         if is_collected {
             (
@@ -370,17 +440,18 @@ fn center_rect(area: Rect, width: u16, height: u16) -> Rect {
     Rect::new(x, y, width, height)
 }
 
-/// Render the game over screen.
+/// Render the game over screen with a popup overlay on the game board.
 pub fn render_game_over(frame: &mut Frame, board: &Board, state: &GameState) {
-    let area = frame.area();
+    // First render the game board behind the popup (no animations)
+    render_game(frame, board, state, None, &[]);
 
     let eggs = state.eggs_collected.len();
     let total = board.egg_count;
 
     let (message, message_color) = if eggs == total {
-        ("🎉 PERFECT! You beat inflation! 🎉", Color::Green)
+        ("🎉 PERFECT! 🎉", Color::Green)
     } else if eggs == 0 {
-        ("💸 Inflation won this time... 📈", Color::Red)
+        ("💸 Inflation won 📈", Color::Red)
     } else {
         ("Game Over!", Color::Yellow)
     };
@@ -388,7 +459,6 @@ pub fn render_game_over(frame: &mut Frame, board: &Board, state: &GameState) {
     let savings = eggs * 7;
 
     let lines = vec![
-        Line::from(""),
         Line::from(Span::styled(
             message,
             Style::default()
@@ -396,31 +466,50 @@ pub fn render_game_over(frame: &mut Frame, board: &Board, state: &GameState) {
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(format!("Eggs Collected: {} / {}", eggs, total)),
-        Line::from(format!("Total Savings: ${}", savings)),
+        Line::from(format!("Eggs: {} / {}", eggs, total)),
+        Line::from(format!("Saved: ${}", savings)),
         Line::from(""),
         Line::from(Span::styled(
-            get_inflation_phrase(eggs, total, true),
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::ITALIC),
-        )),
-        Line::from(""),
-        Line::from(Span::styled(
-            "Press R to restart or Q to quit",
+            "R: restart | Q: quit",
             Style::default().fg(Color::DarkGray),
         )),
     ];
 
-    let game_over = Paragraph::new(lines)
+    // Calculate the board area (same layout as render_game)
+    let area = frame.area();
+    let main_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Min(0)])
+        .split(area);
+    let game_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(0), Constraint::Length(22)])
+        .split(main_chunks[1]);
+    let board_area = game_chunks[0];
+
+    // Calculate popup size and center on board area
+    let popup_width = 24;
+    let popup_height = 8;
+    let popup_area = center_rect(board_area, popup_width, popup_height);
+
+    // Clear the popup area first (removes underlying content)
+    frame.render_widget(Clear, popup_area);
+
+    // Render solid black background
+    let bg = Block::default().style(Style::default().bg(Color::Black));
+    frame.render_widget(bg, popup_area);
+
+    // Render popup content
+    let popup = Paragraph::new(lines)
+        .style(Style::default().bg(Color::Black).fg(Color::White))
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(EGG_BORDER_STYLE)
                 .border_type(BorderType::Rounded)
-                .title("🥚 Game Over"),
+                .title("Game Over"),
         )
         .alignment(Alignment::Center);
 
-    frame.render_widget(game_over, area);
+    frame.render_widget(popup, popup_area);
 }

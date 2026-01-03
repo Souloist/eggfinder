@@ -12,9 +12,9 @@ impl Difficulty {
     /// Returns (width, height, egg_count, starting_turns) for this difficulty.
     pub fn config(&self) -> (usize, usize, usize, i32) {
         match self {
-            Difficulty::Easy => (5, 5, 3, 4),
-            Difficulty::Medium => (10, 10, 7, 7),
-            Difficulty::Hard => (12, 12, 15, 10),
+            Difficulty::Easy => (8, 8, 3, 4),
+            Difficulty::Medium => (15, 12, 7, 7),
+            Difficulty::Hard => (20, 15, 15, 10),
         }
     }
 
