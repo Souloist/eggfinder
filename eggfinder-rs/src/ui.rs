@@ -113,7 +113,7 @@ pub fn render_game(
 
 fn render_status(frame: &mut Frame, area: Rect, board: &Board, state: &GameState) {
     let status_text = format!(
-        "Turns: {} | WASD: move | SPACE: reveal | Q: quit",
+        "Turns: {} | WASD: move | SPACE: reveal | B: back | Q: quit",
         state.turns_remaining
     );
 

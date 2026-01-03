@@ -243,6 +243,9 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App)
                             if let Some(state) = &mut app.state {
                                 match key.code {
                                     KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
+                                    KeyCode::Char('b') => {
+                                        app.restart(); // Go back to difficulty selection
+                                    }
                                     KeyCode::Char('w') | KeyCode::Up => {
                                         state.move_cursor(Direction::Up);
                                     }
