@@ -1,50 +1,48 @@
 """Unit tests for view.py (rendering functions)."""
 
-import unittest
-
 from eggfinder.board import Board
 from eggfinder.model import GameState
 from eggfinder.view import render_board, render_full_game, render_game_status
 
 
-class TestRenderBoard(unittest.TestCase):
+class TestRenderBoard:
     """Test board rendering."""
 
-    def test_render_board_returns_string(self):
+    def test_render_board_returns_string(self) -> None:
         board = Board(3, 3, 1)
         state = GameState()
         result = render_board(board, state)
-        self.assertIsInstance(result, str)
+        assert isinstance(result, str)
 
-    def test_render_board_has_column_headers(self):
+    def test_render_board_has_column_headers(self) -> None:
         board = Board(5, 5, 2)
         state = GameState()
         result = render_board(board, state)
 
         # Should contain column numbers
         lines = result.split("\n")
-        self.assertGreater(len(lines), 0)
+        assert len(lines) > 0
         # First line should have column headers
         for col in range(5):
-            self.assertIn(str(col), lines[0])
+            assert str(col) in lines[0]
 
-    def test_render_board_hidden_cells(self):
+    def test_render_board_hidden_cells(self) -> None:
         board = Board(3, 3, 1)
         state = GameState()
         result = render_board(board, state)
 
         # All cells should be hidden initially
-        self.assertIn("■", result)
+        assert "■" in result
 
-    def test_render_board_revealed_empty(self):
+    def test_render_board_revealed_empty(self) -> None:
         board = Board(3, 3, 0)  # No eggs - all zeros
         state = GameState()
         board.revealed[1][1] = True
 
         result = render_board(board, state)
-        self.assertIn("·", result)
+        assert "·" in result
 
-    def test_render_board_collected_egg(self):
+    def test_render_board_collected_egg(self) -> None:
         board = Board(3, 3, 0)
         board.eggs.add((1, 1))
         board.cells[1][1] = -1
@@ -54,9 +52,9 @@ class TestRenderBoard(unittest.TestCase):
         state.eggs_collected.add((1, 1))
 
         result = render_board(board, state)
-        self.assertIn("★", result)
+        assert "★" in result
 
-    def test_render_board_revealed_egg_not_collected(self):
+    def test_render_board_revealed_egg_not_collected(self) -> None:
         board = Board(3, 3, 0)
         board.eggs.add((1, 1))
         board.cells[1][1] = -1
@@ -66,10 +64,10 @@ class TestRenderBoard(unittest.TestCase):
         # Don't add to eggs_collected
 
         result = render_board(board, state)
-        self.assertIn("○", result)
-        self.assertNotIn("★", result)
+        assert "○" in result
+        assert "★" not in result
 
-    def test_render_board_show_all(self):
+    def test_render_board_show_all(self) -> None:
         board = Board(3, 3, 1)
         state = GameState()
 
@@ -77,11 +75,9 @@ class TestRenderBoard(unittest.TestCase):
 
         # Should not have hidden cells when show_all=True
         # At least numbers or dots should be visible
-        self.assertTrue(
-            "○" in result or "·" in result or any(str(i) in result for i in range(1, 9))
-        )
+        assert "○" in result or "·" in result or any(str(i) in result for i in range(1, 9))
 
-    def test_render_board_numbers(self):
+    def test_render_board_numbers(self) -> None:
         board = Board(3, 3, 0)
         board.eggs.add((1, 1))
         board.cells[1][1] = -1
@@ -94,27 +90,27 @@ class TestRenderBoard(unittest.TestCase):
         result = render_board(board, state)
 
         # Should show '1' for cells adjacent to the egg
-        self.assertIn("1", result)
+        assert "1" in result
 
 
-class TestRenderGameStatus(unittest.TestCase):
+class TestRenderGameStatus:
     """Test game status rendering."""
 
-    def test_render_status_returns_string(self):
+    def test_render_status_returns_string(self) -> None:
         board = Board(5, 5, 3)
         state = GameState()
         result = render_game_status(state, board)
-        self.assertIsInstance(result, str)
+        assert isinstance(result, str)
 
-    def test_render_status_shows_turns(self):
+    def test_render_status_shows_turns(self) -> None:
         board = Board(5, 5, 3)
         state = GameState(turns_remaining=7)
         result = render_game_status(state, board)
 
-        self.assertIn("7", result)
-        self.assertIn("Turns", result)
+        assert "7" in result
+        assert "Turns" in result
 
-    def test_render_status_shows_eggs_collected(self):
+    def test_render_status_shows_eggs_collected(self) -> None:
         board = Board(5, 5, 5)
         state = GameState()
         state.eggs_collected.add((0, 0))
@@ -122,26 +118,26 @@ class TestRenderGameStatus(unittest.TestCase):
 
         result = render_game_status(state, board)
 
-        self.assertIn("2", result)  # Eggs collected
-        self.assertIn("5", result)  # Total eggs
-        self.assertIn("Eggs", result)
+        assert "2" in result  # Eggs collected
+        assert "5" in result  # Total eggs
+        assert "Eggs" in result
 
-    def test_render_status_shows_score(self):
+    def test_render_status_shows_score(self) -> None:
         board = Board(5, 5, 3)
         state = GameState(score=10)
         result = render_game_status(state, board)
 
-        self.assertIn("10", result)
-        self.assertIn("Score", result)
+        assert "10" in result
+        assert "Score" in result
 
-    def test_render_status_game_over(self):
+    def test_render_status_game_over(self) -> None:
         board = Board(5, 5, 3)
         state = GameState(game_over=True)
         result = render_game_status(state, board)
 
-        self.assertIn("GAME OVER", result)
+        assert "GAME OVER" in result
 
-    def test_render_status_perfect_game(self):
+    def test_render_status_perfect_game(self) -> None:
         board = Board(5, 5, 3)
         state = GameState(game_over=True)
         # Collect all eggs
@@ -149,39 +145,39 @@ class TestRenderGameStatus(unittest.TestCase):
 
         result = render_game_status(state, board)
 
-        self.assertIn("GAME OVER", result)
-        self.assertIn("all", result.lower())
+        assert "GAME OVER" in result
+        assert "all" in result.lower()
 
 
-class TestRenderFullGame(unittest.TestCase):
+class TestRenderFullGame:
     """Test full game rendering."""
 
-    def test_render_full_game_returns_string(self):
+    def test_render_full_game_returns_string(self) -> None:
         board = Board(5, 5, 3)
         state = GameState()
         result = render_full_game(board, state)
-        self.assertIsInstance(result, str)
+        assert isinstance(result, str)
 
-    def test_render_full_game_contains_status_and_board(self):
+    def test_render_full_game_contains_status_and_board(self) -> None:
         board = Board(5, 5, 3)
         state = GameState(turns_remaining=7, score=2)
 
         result = render_full_game(board, state)
 
         # Should contain elements from both status and board
-        self.assertIn("Turns", result)
-        self.assertIn("Score", result)
-        self.assertIn("■", result)  # Hidden cells from board
+        assert "Turns" in result
+        assert "Score" in result
+        assert "■" in result  # Hidden cells from board
 
-    def test_render_full_game_multiline(self):
+    def test_render_full_game_multiline(self) -> None:
         board = Board(3, 3, 1)
         state = GameState()
         result = render_full_game(board, state)
 
         lines = result.split("\n")
-        self.assertGreater(len(lines), 5)  # Status + board should have multiple lines
+        assert len(lines) > 5  # Status + board should have multiple lines
 
-    def test_render_full_game_show_all(self):
+    def test_render_full_game_show_all(self) -> None:
         board = Board(3, 3, 1)
         state = GameState()
 
@@ -189,11 +185,7 @@ class TestRenderFullGame(unittest.TestCase):
         result_shown = render_full_game(board, state, show_all=True)
 
         # When show_all=False, should have hidden cells
-        self.assertIn("■", result_hidden)
+        assert "■" in result_hidden
 
         # Results should be different
-        self.assertNotEqual(result_hidden, result_shown)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert result_hidden != result_shown

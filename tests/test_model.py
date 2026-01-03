@@ -1,52 +1,46 @@
 """Unit tests for model.py (GameState)."""
 
-import unittest
-
 from eggfinder.model import GameState
 
 
-class TestGameState(unittest.TestCase):
-    def test_default_initialization(self):
+class TestGameState:
+    def test_default_initialization(self) -> None:
         state = GameState()
-        self.assertEqual(state.turns_remaining, 10)
-        self.assertEqual(len(state.eggs_collected), 0)
-        self.assertFalse(state.game_over)
-        self.assertEqual(state.score, 0)
+        assert state.turns_remaining == 10
+        assert len(state.eggs_collected) == 0
+        assert not state.game_over
+        assert state.score == 0
 
-    def test_custom_initialization(self):
+    def test_custom_initialization(self) -> None:
         state = GameState(turns_remaining=5, score=3, game_over=True)
-        self.assertEqual(state.turns_remaining, 5)
-        self.assertEqual(state.score, 3)
-        self.assertTrue(state.game_over)
+        assert state.turns_remaining == 5
+        assert state.score == 3
+        assert state.game_over
 
-    def test_eggs_collected_mutation(self):
+    def test_eggs_collected_mutation(self) -> None:
         state = GameState()
         state.eggs_collected.add((0, 0))
         state.eggs_collected.add((1, 1))
-        self.assertEqual(len(state.eggs_collected), 2)
-        self.assertIn((0, 0), state.eggs_collected)
-        self.assertIn((1, 1), state.eggs_collected)
+        assert len(state.eggs_collected) == 2
+        assert (0, 0) in state.eggs_collected
+        assert (1, 1) in state.eggs_collected
 
-    def test_turns_modification(self):
+    def test_turns_modification(self) -> None:
         state = GameState()
         state.turns_remaining -= 1
-        self.assertEqual(state.turns_remaining, 9)
+        assert state.turns_remaining == 9
 
         state.turns_remaining += 2
-        self.assertEqual(state.turns_remaining, 11)
+        assert state.turns_remaining == 11
 
-    def test_game_over_flag(self):
+    def test_game_over_flag(self) -> None:
         state = GameState()
-        self.assertFalse(state.game_over)
+        assert not state.game_over
 
         state.game_over = True
-        self.assertTrue(state.game_over)
+        assert state.game_over
 
-    def test_score_update(self):
+    def test_score_update(self) -> None:
         state = GameState()
         state.score = 5
-        self.assertEqual(state.score, 5)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert state.score == 5
